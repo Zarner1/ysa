@@ -18,10 +18,10 @@ from main_rcnn import build_model, infer_classes_from_xmls, DATA_ROOT as RCNN_DA
 
 
 PROJECT_ROOT = Path(__file__).parent
-RUNS_DIR = PROJECT_ROOT / "runs"
-DATA_ROOT = Path("C:/Users/MSI/Desktop/xray-yolo/data")  # Gerçek veri konumu
-TEST_IMG_DIR = DATA_ROOT / "test" / "images"
-CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
+RUNS_DIR = PROJECT_ROOT 
+DATA_ROOT = Path("C:\\Users\\Ms_yi\\OneDrive\\Masaüstü\\ysa")  # Gerçek veri konumu
+TEST_IMG_DIR = DATA_ROOT
+CHECKPOINTS_DIR = PROJECT_ROOT
 
 
 @st.cache_resource(show_spinner=False)
