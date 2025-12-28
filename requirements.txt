@@ -1,10 +1,11 @@
-numpy
+numpy==1.26.0
 streamlit
 Pillow
 matplotlib
-ultralytics
+ultralytics==8.3.241
+# Note: torch/torchvision are large binaries; Streamlit Cloud may not support them.
+# If you deploy to Streamlit Cloud, consider using a lightweight demo or a separate inference API.
 torch
 torchvision
-ultralytics==8.2.0
-opencv-python-headless
+opencv-python-headless==4.8.1.78
 
