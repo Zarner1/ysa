@@ -9,7 +9,6 @@ from PIL import Image
 import torch
 import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from ultralytics import YOLO
 import time
 
 
@@ -18,15 +17,17 @@ from main_rcnn import build_model, infer_classes_from_xmls, DATA_ROOT as RCNN_DA
 
 
 PROJECT_ROOT = Path(__file__).parent
-RUNS_DIR = PROJECT_ROOT 
-DATA_ROOT = Path("C:\\Users\\Ms_yi\\OneDrive\\Masaüstü\\ysa")  # Gerçek veri konumu
+DATA_ROOT = PROJECT_ROOT / "data"
 TEST_IMG_DIR = DATA_ROOT
-CHECKPOINTS_DIR = PROJECT_ROOT
+CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
+
 
 
 @st.cache_resource(show_spinner=False)
 def load_yolo_model(weights_path: str):
+    from ultralytics import YOLO
     return YOLO(weights_path)
+
 
 
 @st.cache_resource(show_spinner=False)
