@@ -9,7 +9,9 @@ from PIL import Image
 import torch
 import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from ultralytics import YOLO
+# Note: importing `ultralytics` at module import time on Streamlit Cloud
+# can fail if opencv or other binaries are not yet available. We perform
+# a lazy import inside `load_yolo_model()` below to avoid startup import errors.
 import time
 
 
@@ -61,6 +63,14 @@ def _find_first_existing(*paths, pattern=None):
 
 @st.cache_resource(show_spinner=False)
 def load_yolo_model(weights_path: str):
+    try:
+        # Lazy import to avoid import-time failures on deployment platforms
+        from ultralytics import YOLO
+    except Exception as e:
+        # Surface a friendly Streamlit error instead of crashing at import time
+        st.error("`ultralytics` import failed. Check logs and requirements (opencv).")
+        raise
+
     return YOLO(weights_path)
 
 
