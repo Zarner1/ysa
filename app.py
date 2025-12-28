@@ -9,9 +9,7 @@ from PIL import Image
 import torch
 import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-# Note: importing `ultralytics` at module import time on Streamlit Cloud
-# can fail if opencv or other binaries are not yet available. We perform
-# a lazy import inside `load_yolo_model()` below to avoid startup import errors.
+from ultralytics import YOLO
 import time
 
 
@@ -21,56 +19,13 @@ from main_rcnn import build_model, infer_classes_from_xmls, DATA_ROOT as RCNN_DA
 
 PROJECT_ROOT = Path(__file__).parent
 RUNS_DIR = PROJECT_ROOT / "runs"
-# DATA_ROOT: önce ortam değişkenini kontrol et; yoksa proje içindeki `data` dizinini kullan
-DATA_ROOT = Path(os.getenv("DATA_ROOT", str(PROJECT_ROOT / "data")))
-if not DATA_ROOT.exists():
-    # fallback: proje kökü (örnek resimleriniz burada olabilir)
-    DATA_ROOT = PROJECT_ROOT
-
-# Test görüntü dizini: öncelikle `data/test/images`, yoksa proje kökü
+DATA_ROOT = Path("C:/Users/MSI/Desktop/xray-yolo/data")  # Gerçek veri konumu
 TEST_IMG_DIR = DATA_ROOT / "test" / "images"
-if not TEST_IMG_DIR.exists():
-    TEST_IMG_DIR = PROJECT_ROOT
-
 CHECKPOINTS_DIR = PROJECT_ROOT / "checkpoints"
-
-
-def _find_first_existing(*paths, pattern=None):
-    """Verilen yollar arasında ilk mevcut olanı döndürür. Eğer pattern verilirse
-    proje kökünde bu paterne uyan ilk dosyayı arar.
-    """
-    for p in paths:
-        if p is None:
-            continue
-        p = Path(p)
-        if p.exists():
-            return str(p)
-    if pattern:
-        candidates = list(PROJECT_ROOT.glob(pattern))
-        if candidates:
-            return str(candidates[0])
-    # Son çare: proje kökünde best*.pt veya *.pth araması
-    for pat in ("best*.pt", "*.pt", "*.pth"):
-        candidates = list(PROJECT_ROOT.glob(pat))
-        if candidates:
-            return str(candidates[0])
-    # runs altındaki ağırlıkları da kontrol et
-    candidates = list(RUNS_DIR.rglob("best*.pt")) if RUNS_DIR.exists() else []
-    if candidates:
-        return str(candidates[0])
-    return None
 
 
 @st.cache_resource(show_spinner=False)
 def load_yolo_model(weights_path: str):
-    try:
-        # Lazy import to avoid import-time failures on deployment platforms
-        from ultralytics import YOLO
-    except Exception as e:
-        # Surface a friendly Streamlit error instead of crashing at import time
-        st.error("`ultralytics` import failed. Check logs and requirements (opencv).")
-        raise
-
     return YOLO(weights_path)
 
 
@@ -421,57 +376,43 @@ def main():
     
     # Model yükleme
     if model_type == "YOLOv11n":
-        weights_path = _find_first_existing(
-            PROJECT_ROOT / "runs" / "yolov11n_xray2" / "weights" / "best.pt",
-            PROJECT_ROOT / "best.pt",
-            PROJECT_ROOT / "best8.pt",
-            pattern="best*.pt",
-        )
-
-        if not weights_path:
-            st.sidebar.error("YOLOv11n için ağırlık dosyası bulunamadı.")
-            st.sidebar.info("Projeye `best.pt` yerleştirin veya `runs/.../weights/best.pt` yolunu kullanın.")
+        weights_path = str(PROJECT_ROOT / "runs" / "yolov11n_xray2" / "weights" / "best.pt")
+        
+        if not Path(weights_path).exists():
+            st.sidebar.error(f"Model dosyası bulunamadı: {weights_path}")
+            st.sidebar.info("Lütfen önce YOLOv11n modelini eğitin: python train_yolo_v11.py")
             st.stop()
-
+        
         try:
             model = load_yolo_model(weights_path)
-            st.sidebar.success(f"✅ YOLOv11n yüklendi ({Path(weights_path).name})")
+            st.sidebar.success(f"✅ YOLOv11n yüklendi")
             model_info = {"type": "yolo", "model": model}
         except Exception as e:
             st.sidebar.error(f"Model yüklenemedi: {e}")
             st.stop()
     
     elif model_type == "YOLOv8n":
-        weights_path = _find_first_existing(
-            PROJECT_ROOT / "runs" / "yolov8n_xray4" / "weights" / "best.pt",
-            PROJECT_ROOT / "best.pt",
-            PROJECT_ROOT / "best8.pt",
-            pattern="best*.pt",
-        )
-
-        if not weights_path:
-            st.sidebar.error("YOLOv8n için ağırlık dosyası bulunamadı.")
-            st.sidebar.info("Projeye `best.pt` yerleştirin veya `runs/.../weights/best.pt` yolunu kullanın.")
+        weights_path = str(PROJECT_ROOT / "runs" / "yolov8n_xray4" / "weights" / "best.pt")
+        
+        if not Path(weights_path).exists():
+            st.sidebar.error(f"Model dosyası bulunamadı: {weights_path}")
+            st.sidebar.info("Lütfen önce YOLOv8n modelini eğitin: python train_yolo.py")
             st.stop()
-
+        
         try:
             model = load_yolo_model(weights_path)
-            st.sidebar.success(f"✅ YOLOv8n yüklendi ({Path(weights_path).name})")
+            st.sidebar.success(f"✅ YOLOv8n yüklendi")
             model_info = {"type": "yolo", "model": model}
         except Exception as e:
             st.sidebar.error(f"Model yüklenemedi: {e}")
             st.stop()
             
     else:  # Faster R-CNN
-        checkpoint_path = _find_first_existing(
-            CHECKPOINTS_DIR / "model_epoch_100.pth",
-            CHECKPOINTS_DIR,
-            pattern="*.pth",
-        )
-
-        if not checkpoint_path:
-            st.sidebar.error("Faster R-CNN checkpoint dosyası bulunamadı.")
-            st.sidebar.info("Lütfen `checkpoints/` içine .pth dosyası koyun veya `main_rcnn.py` ile eğitin.")
+        checkpoint_path = str(CHECKPOINTS_DIR / "model_epoch_100.pth")
+        
+        if not Path(checkpoint_path).exists():
+            st.sidebar.error(f"Checkpoint bulunamadı: {checkpoint_path}")
+            st.sidebar.info("Lütfen önce Faster R-CNN modelini eğitin: python main_rcnn.py")
             st.stop()
         
         try:
